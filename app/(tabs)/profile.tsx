@@ -1,0 +1,308 @@
+import { Ionicons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import {
+    Alert,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { useApp } from '../../src/context/AppContext';
+import { useTheme } from '../../src/theme/ThemeContext';
+
+export default function ProfileScreen() {
+  const { theme, isDark, toggleTheme } = useTheme();
+  const { user, updateUser, ratedMovies } = useApp();
+  const [isEditing, setIsEditing] = useState(false);
+  const [name, setName] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
+
+  const handleSave = async () => {
+    try {
+      await updateUser({ name, email });
+      setIsEditing(false);
+      Alert.alert('Success', 'Profile updated successfully!');
+    } catch {
+      Alert.alert('Error', 'Failed to update profile');
+    }
+  };
+
+  const stats = [
+    {
+      label: 'Movies Rated',
+      value: ratedMovies.length,
+      icon: 'star' as const,
+      color: '#FFC107',
+    },
+    {
+      label: 'Avg Rating',
+      value: ratedMovies.length > 0
+        ? (ratedMovies.reduce((sum: number, m: any) => sum + m.userRating, 0) / ratedMovies.length).toFixed(1)
+        : '0.0',
+      icon: 'trophy' as const,
+      color: theme.colors.secondary,
+    },
+    {
+      label: 'This Month',
+      value: ratedMovies.filter((m: any) => {
+        const monthAgo = new Date();
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        return m.ratedAt >= monthAgo;
+      }).length,
+      icon: 'calendar' as const,
+      color: theme.colors.primary,
+    },
+  ];
+
+  return (
+    <ScrollView 
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      contentContainerStyle={styles.contentContainer}
+    >
+      <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
+        <View style={styles.profileImageContainer}>
+          {user?.profilePicture ? (
+            <Image source={{ uri: user.profilePicture }} style={styles.profileImage} />
+          ) : (
+            <View style={[styles.profileImagePlaceholder, { backgroundColor: theme.colors.primary }]}>
+              <Ionicons name="person" size={48} color="#fff" />
+            </View>
+          )}
+        </View>
+
+        {isEditing ? (
+          <View style={styles.editContainer}>
+            <TextInput
+              style={[styles.input, { 
+                backgroundColor: theme.colors.background,
+                color: theme.colors.text,
+                borderColor: theme.colors.border,
+              }]}
+              value={name}
+              onChangeText={setName}
+              placeholder="Name"
+              placeholderTextColor={theme.colors.textSecondary}
+            />
+            <TextInput
+              style={[styles.input, { 
+                backgroundColor: theme.colors.background,
+                color: theme.colors.text,
+                borderColor: theme.colors.border,
+              }]}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Email"
+              placeholderTextColor={theme.colors.textSecondary}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            <View style={styles.editButtons}>
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: theme.colors.border }]}
+                onPress={() => {
+                  setIsEditing(false);
+                  setName(user?.name || '');
+                  setEmail(user?.email || '');
+                }}
+              >
+                <Text style={[styles.buttonText, { color: theme.colors.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: theme.colors.primary }]}
+                onPress={handleSave}
+              >
+                <Text style={styles.buttonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.profileInfo}>
+            <Text style={[styles.name, { color: theme.colors.text }]}>{user?.name}</Text>
+            <Text style={[styles.email, { color: theme.colors.textSecondary }]}>{user?.email}</Text>
+            <TouchableOpacity
+              style={[styles.editButton, { borderColor: theme.colors.primary }]}
+              onPress={() => setIsEditing(true)}
+            >
+              <Ionicons name="create-outline" size={20} color={theme.colors.primary} />
+              <Text style={[styles.editButtonText, { color: theme.colors.primary }]}>
+                Edit Profile
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.statsContainer}>
+        {stats.map((stat, index) => (
+          <View
+            key={index}
+            style={[styles.statCard, { 
+              backgroundColor: theme.colors.card,
+              borderColor: theme.colors.border,
+            }]}
+          >
+            <Ionicons name={stat.icon} size={32} color={stat.color} />
+            <Text style={[styles.statValue, { color: theme.colors.text }]}>{stat.value}</Text>
+            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
+              {stat.label}
+            </Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={[styles.settingsContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Settings</Text>
+        
+        <TouchableOpacity
+          style={[styles.settingItem, { borderBottomColor: theme.colors.border }]}
+          onPress={toggleTheme}
+        >
+          <View style={styles.settingLeft}>
+            <Ionicons 
+              name={isDark ? 'moon' : 'sunny'} 
+              size={24} 
+              color={theme.colors.text} 
+            />
+            <Text style={[styles.settingText, { color: theme.colors.text }]}>
+              {isDark ? 'Dark Mode' : 'Light Mode'}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={24} color={theme.colors.textSecondary} />
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  contentContainer: {
+    padding: 16,
+  },
+  header: {
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  profileImageContainer: {
+    marginBottom: 16,
+  },
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  profileImagePlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileInfo: {
+    alignItems: 'center',
+  },
+  name: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  email: {
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  editButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  editContainer: {
+    width: '100%',
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    fontSize: 16,
+  },
+  editButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  button: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 4,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  statCard: {
+    flex: 1,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginHorizontal: 4,
+    borderWidth: 1,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginTop: 8,
+  },
+  statLabel: {
+    fontSize: 12,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  settingsContainer: {
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  settingItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  settingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  settingText: {
+    fontSize: 16,
+    marginLeft: 12,
+  },
+});
