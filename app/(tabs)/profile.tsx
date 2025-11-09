@@ -1,31 +1,59 @@
+import { useAuth } from '@/src/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-    Alert,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useApp } from '../../src/context/AppContext';
 import { useTheme } from '../../src/theme/ThemeContext';
 
 export default function ProfileScreen() {
   const { theme, isDark, toggleTheme } = useTheme();
-  const { user, updateUser, ratedMovies } = useApp();
+
+  // 👇 usuário logado, vindo do AuthContext (UserRepository)
+  const { user: authUser, signOut, updateProfile } = useAuth();
+
+  // 👇 só usamos o AppContext pra pegar os filmes avaliados
+  const { ratedMovies } = useApp();
+
   const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState(user?.name || '');
-  const [email, setEmail] = useState(user?.email || '');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+
+  // sempre que trocar de conta, atualiza os campos
+  useEffect(() => {
+    if (authUser) {
+      setName(authUser.name);
+      setEmail(authUser.email);
+    } else {
+      setName('');
+      setEmail('');
+    }
+  }, [authUser]);
+
+  const avatarUri = authUser?.profilePicture ?? null;
+
+  const myRatedMovies = useMemo(
+    () => ratedMovies.filter((m: any) => m.userEmail === authUser?.email),
+    [ratedMovies, authUser?.email]
+  );
 
   const handleSave = async () => {
+    if (!authUser) return;
+
     try {
-      await updateUser({ name, email });
+      await updateProfile({ name, email });
       setIsEditing(false);
       Alert.alert('Success', 'Profile updated successfully!');
-    } catch {
+    } catch (e) {
+      console.error(e);
       Alert.alert('Error', 'Failed to update profile');
     }
   };
@@ -33,21 +61,27 @@ export default function ProfileScreen() {
   const stats = [
     {
       label: 'Movies Rated',
-      value: ratedMovies.length,
+      value: myRatedMovies.length,
       icon: 'star' as const,
       color: '#FFC107',
     },
     {
       label: 'Avg Rating',
-      value: ratedMovies.length > 0
-        ? (ratedMovies.reduce((sum: number, m: any) => sum + m.userRating, 0) / ratedMovies.length).toFixed(1)
-        : '0.0',
+      value:
+        myRatedMovies.length > 0
+          ? (
+              myRatedMovies.reduce(
+                (sum: number, m: any) => sum + m.userRating,
+                0
+              ) / myRatedMovies.length
+            ).toFixed(1)
+          : '0.0',
       icon: 'trophy' as const,
       color: theme.colors.secondary,
     },
     {
       label: 'This Month',
-      value: ratedMovies.filter((m: any) => {
+      value: myRatedMovies.filter((m: any) => {
         const monthAgo = new Date();
         monthAgo.setMonth(monthAgo.getMonth() - 1);
         return m.ratedAt >= monthAgo;
@@ -58,16 +92,21 @@ export default function ProfileScreen() {
   ];
 
   return (
-    <ScrollView 
+    <ScrollView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.contentContainer}
     >
       <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
         <View style={styles.profileImageContainer}>
-          {user?.profilePicture ? (
-            <Image source={{ uri: user.profilePicture }} style={styles.profileImage} />
+          {avatarUri ? (
+            <Image source={{ uri: avatarUri }} style={styles.profileImage} />
           ) : (
-            <View style={[styles.profileImagePlaceholder, { backgroundColor: theme.colors.primary }]}>
+            <View
+              style={[
+                styles.profileImagePlaceholder,
+                { backgroundColor: theme.colors.primary },
+              ]}
+            >
               <Ionicons name="person" size={48} color="#fff" />
             </View>
           )}
@@ -76,22 +115,28 @@ export default function ProfileScreen() {
         {isEditing ? (
           <View style={styles.editContainer}>
             <TextInput
-              style={[styles.input, { 
-                backgroundColor: theme.colors.background,
-                color: theme.colors.text,
-                borderColor: theme.colors.border,
-              }]}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: theme.colors.background,
+                  color: theme.colors.text,
+                  borderColor: theme.colors.border,
+                },
+              ]}
               value={name}
               onChangeText={setName}
               placeholder="Name"
               placeholderTextColor={theme.colors.textSecondary}
             />
             <TextInput
-              style={[styles.input, { 
-                backgroundColor: theme.colors.background,
-                color: theme.colors.text,
-                borderColor: theme.colors.border,
-              }]}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: theme.colors.background,
+                  color: theme.colors.text,
+                  borderColor: theme.colors.border,
+                },
+              ]}
               value={email}
               onChangeText={setEmail}
               placeholder="Email"
@@ -99,16 +144,18 @@ export default function ProfileScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
             />
-            <View style={styles.editButtons}>
+            <View className="editButtons" style={styles.editButtons}>
               <TouchableOpacity
                 style={[styles.button, { backgroundColor: theme.colors.border }]}
                 onPress={() => {
                   setIsEditing(false);
-                  setName(user?.name || '');
-                  setEmail(user?.email || '');
+                  setName(authUser?.name || '');
+                  setEmail(authUser?.email || '');
                 }}
               >
-                <Text style={[styles.buttonText, { color: theme.colors.text }]}>Cancel</Text>
+                <Text style={[styles.buttonText, { color: theme.colors.text }]}>
+                  Cancel
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.button, { backgroundColor: theme.colors.primary }]}
@@ -120,14 +167,24 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <View style={styles.profileInfo}>
-            <Text style={[styles.name, { color: theme.colors.text }]}>{user?.name}</Text>
-            <Text style={[styles.email, { color: theme.colors.textSecondary }]}>{user?.email}</Text>
+            <Text style={[styles.name, { color: theme.colors.text }]}>
+              {authUser?.name}
+            </Text>
+            <Text style={[styles.email, { color: theme.colors.textSecondary }]}>
+              {authUser?.email}
+            </Text>
             <TouchableOpacity
               style={[styles.editButton, { borderColor: theme.colors.primary }]}
               onPress={() => setIsEditing(true)}
             >
-              <Ionicons name="create-outline" size={20} color={theme.colors.primary} />
-              <Text style={[styles.editButtonText, { color: theme.colors.primary }]}>
+              <Ionicons
+                name="create-outline"
+                size={20}
+                color={theme.colors.primary}
+              />
+              <Text
+                style={[styles.editButtonText, { color: theme.colors.primary }]}
+              >
                 Edit Profile
               </Text>
             </TouchableOpacity>
@@ -135,42 +192,87 @@ export default function ProfileScreen() {
         )}
       </View>
 
-      <View style={styles.statsContainer}>
+      <View className="statsContainer" style={styles.statsContainer}>
         {stats.map((stat, index) => (
           <View
             key={index}
-            style={[styles.statCard, { 
-              backgroundColor: theme.colors.card,
-              borderColor: theme.colors.border,
-            }]}
+            style={[
+              styles.statCard,
+              {
+                backgroundColor: theme.colors.card,
+                borderColor: theme.colors.border,
+              },
+            ]}
           >
             <Ionicons name={stat.icon} size={32} color={stat.color} />
-            <Text style={[styles.statValue, { color: theme.colors.text }]}>{stat.value}</Text>
-            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.statValue, { color: theme.colors.text }]}>
+              {stat.value}
+            </Text>
+            <Text
+              style={[styles.statLabel, { color: theme.colors.textSecondary }]}
+            >
               {stat.label}
             </Text>
           </View>
         ))}
       </View>
 
-      <View style={[styles.settingsContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Settings</Text>
-        
+      <View
+        style={[
+          styles.settingsContainer,
+          { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+        ]}
+      >
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+          Settings
+        </Text>
+
         <TouchableOpacity
-          style={[styles.settingItem, { borderBottomColor: theme.colors.border }]}
+          style={[
+            styles.settingItem,
+            { borderBottomColor: theme.colors.border },
+          ]}
           onPress={toggleTheme}
         >
           <View style={styles.settingLeft}>
-            <Ionicons 
-              name={isDark ? 'moon' : 'sunny'} 
-              size={24} 
-              color={theme.colors.text} 
+            <Ionicons
+              name={isDark ? 'moon' : 'sunny'}
+              size={24}
+              color={theme.colors.text}
             />
             <Text style={[styles.settingText, { color: theme.colors.text }]}>
               {isDark ? 'Dark Mode' : 'Light Mode'}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={24} color={theme.colors.textSecondary} />
+          <Ionicons
+            name="chevron-forward"
+            size={24}
+            color={theme.colors.textSecondary}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.settingItem,
+            { borderBottomColor: theme.colors.border, marginTop: 8 },
+          ]}
+          onPress={signOut}
+        >
+          <View style={styles.settingLeft}>
+            <Ionicons
+              name="log-out-outline"
+              size={24}
+              color={theme.colors.error ?? '#EF4444'}
+            />
+            <Text style={[styles.settingText, { color: theme.colors.text }]}>
+              Sair da conta
+            </Text>
+          </View>
+          <Ionicons
+            name="chevron-forward"
+            size={24}
+            color={theme.colors.textSecondary}
+          />
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -178,26 +280,16 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: 16,
-  },
+  container: { flex: 1 },
+  contentContainer: { padding: 16 },
   header: {
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
     marginBottom: 24,
   },
-  profileImageContainer: {
-    marginBottom: 16,
-  },
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-  },
+  profileImageContainer: { marginBottom: 16 },
+  profileImage: { width: 100, height: 100, borderRadius: 50 },
   profileImagePlaceholder: {
     width: 100,
     height: 100,
@@ -205,18 +297,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  profileInfo: {
-    alignItems: 'center',
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  email: {
-    fontSize: 16,
-    marginBottom: 16,
-  },
+  profileInfo: { alignItems: 'center' },
+  name: { fontSize: 24, fontWeight: '700', marginBottom: 4 },
+  email: { fontSize: 16, marginBottom: 16 },
   editButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -225,14 +308,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
   },
-  editButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  editContainer: {
-    width: '100%',
-  },
+  editButtonText: { fontSize: 16, fontWeight: '600', marginLeft: 8 },
+  editContainer: { width: '100%' },
   input: {
     borderWidth: 1,
     borderRadius: 8,
@@ -252,11 +329,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 4,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -270,26 +343,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     borderWidth: 1,
   },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginTop: 8,
-  },
-  statLabel: {
-    fontSize: 12,
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  settingsContainer: {
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 16,
-  },
+  statValue: { fontSize: 24, fontWeight: '700', marginTop: 8 },
+  statLabel: { fontSize: 12, marginTop: 4, textAlign: 'center' },
+  settingsContainer: { borderRadius: 12, padding: 16, borderWidth: 1 },
+  sectionTitle: { fontSize: 20, fontWeight: '600', marginBottom: 16 },
   settingItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -297,12 +354,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
   },
-  settingLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  settingText: {
-    fontSize: 16,
-    marginLeft: 12,
-  },
+  settingLeft: { flexDirection: 'row', alignItems: 'center' },
+  settingText: { fontSize: 16, marginLeft: 12 },
 });

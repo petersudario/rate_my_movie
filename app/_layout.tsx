@@ -2,8 +2,8 @@ import { Slot, usePathname, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { AuthProvider, useAuth } from '../context/AuthContext';
 import { AppProvider } from '../src/context/AppContext';
+import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { ThemeProvider } from '../src/theme/ThemeContext';
 
 function RootLayoutNav() {
@@ -14,10 +14,10 @@ function RootLayoutNav() {
   useEffect(() => {
     if (loading) return;
 
-    const isAuthRoute = pathname === '/';
+    const isAuthRoute = pathname.startsWith('/auth');
 
     if (!user && !isAuthRoute) {
-      router.replace('/');
+      router.replace('/auth/login');
     } else if (user && isAuthRoute) {
       router.replace('/(tabs)');
     }

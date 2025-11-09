@@ -1,13 +1,14 @@
+import { useAuth } from '@/src/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    FlatList,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  FlatList,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { ErrorMessage } from '../../src/components/ErrorMessage';
 import { LoadingSpinner } from '../../src/components/LoadingSpinner';
@@ -23,6 +24,7 @@ export default function SearchScreen() {
   const { movies, isLoading, error, searchMovies, loadPopularMovies } = useSearchViewModel();
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
+  const { user } = useAuth();
 
   useEffect(() => {
     loadPopularMovies();
@@ -103,8 +105,9 @@ export default function SearchScreen() {
             data={movies}
             keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => {
-              const rated = isMovieRated(item.id);
-              const ratedMovie = getRatedMovie(item.id);
+              const rated = isMovieRated(item.id, user?.email);
+              const ratedMovie = getRatedMovie(item.id, user?.email);
+
               return (
                 <MovieCard
                   movie={item}

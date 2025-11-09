@@ -1,13 +1,14 @@
+import { useAuth } from '@/src/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    FlatList,
-    Modal,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  FlatList,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { MovieCard } from '../../src/components/MovieCard';
 import { useApp } from '../../src/context/AppContext';
@@ -18,13 +19,19 @@ export default function RatedMoviesScreen() {
   const { theme } = useTheme();
   const router = useRouter();
   const { ratedMovies } = useApp();
+  const { user } = useAuth();
+
+  const myRatedMovies = ratedMovies.filter(
+    (m) => m.userEmail === user?.email
+  );
+
   const {
     filteredMovies,
     sortBy,
     filterBy,
     updateSort,
     updateFilter,
-  } = useRatedMoviesViewModel(ratedMovies);
+  } = useRatedMoviesViewModel(myRatedMovies);
 
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
