@@ -1,25 +1,27 @@
-import { Slot, useRouter, useSegments } from 'expo-router';
+import { Slot, usePathname, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { AuthProvider, useAuth } from '../context/AuthContext';
+import { AppProvider } from '../src/context/AppContext';
+import { ThemeProvider } from '../src/theme/ThemeContext';
 
 function RootLayoutNav() {
   const { user, loading } = useAuth();
-  const segments = useSegments();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (loading) return;
 
-    const inAuthGroup = segments[0] === 'auth';
+    const isAuthRoute = pathname === '/';
 
-    if (!user && !inAuthGroup) {
-      router.replace('/auth/login');
-    } else if (user && inAuthGroup) {
-      router.replace('/app');
+    if (!user && !isAuthRoute) {
+      router.replace('/');
+    } else if (user && isAuthRoute) {
+      router.replace('/(tabs)');
     }
-  }, [user, loading, segments, router]);
+  }, [user, loading, pathname, router]);
 
   if (loading) {
     return (
@@ -39,8 +41,12 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <RootLayoutNav />
-    </AuthProvider>
+    <ThemeProvider>
+      <AppProvider>
+        <AuthProvider>
+          <RootLayoutNav />
+        </AuthProvider>
+      </AppProvider>
+    </ThemeProvider>
   );
 }
