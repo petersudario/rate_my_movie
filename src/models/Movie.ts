@@ -38,4 +38,5 @@ export interface RatedMovie extends Movie {
   userRating: number;
   ratedAt: Date;
   watchedAt?: Date;
+  userEmail: string;
 }

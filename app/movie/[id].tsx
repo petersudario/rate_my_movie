@@ -1,15 +1,16 @@
+import { useAuth } from '@/src/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { ErrorMessage } from '../../src/components/ErrorMessage';
 import { LoadingSpinner } from '../../src/components/LoadingSpinner';
@@ -24,10 +25,17 @@ export default function MovieDetailsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const movieId = Number(params.id);
-  
-  const { isMovieRated, getRatedMovie, addRatedMovie, updateRatedMovie, removeRatedMovie } = useApp();
+
+  const {
+    addRatedMovie,
+    updateRatedMovie,
+    removeRatedMovie,
+    isMovieRated,
+    getRatedMovie,
+  } = useApp();
   const { movieDetails, isLoading, error, loadMovieDetails } = useMovieDetailsViewModel();
-  
+  const { user } = useAuth();
+
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [selectedRating, setSelectedRating] = useState(0);
 
@@ -35,13 +43,22 @@ export default function MovieDetailsScreen() {
     if (movieId) {
       loadMovieDetails(movieId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [movieId]);
 
-  const currentRating = getRatedMovie(movieId)?.userRating || 0;
+  const userEmail = user?.email;
+
+  const userRatedMovie = getRatedMovie(movieId, userEmail);
+  const currentRating = userRatedMovie?.userRating || 0;
+  const hasRated = isMovieRated(movieId, userEmail);
+
 
   const handleRateMovie = async () => {
     if (!movieDetails) return;
+
+    if (!userEmail) {
+      Alert.alert('Error', 'You need to be logged in to rate movies.');
+      return;
+    }
 
     try {
       const ratedMovie: RatedMovie = {
@@ -58,16 +75,17 @@ export default function MovieDetailsScreen() {
         genreIds: movieDetails.genres.map(g => g.id),
         userRating: selectedRating,
         ratedAt: new Date(),
+        userEmail,
       };
 
-      if (isMovieRated(movieId)) {
+      if (hasRated) {
         await updateRatedMovie(movieId, selectedRating);
         Alert.alert('Success', 'Rating updated successfully!');
       } else {
         await addRatedMovie(ratedMovie);
         Alert.alert('Success', 'Movie rated and added to your list!');
       }
-      
+
       setShowRatingModal(false);
     } catch {
       Alert.alert('Error', 'Failed to rate movie');
@@ -75,6 +93,8 @@ export default function MovieDetailsScreen() {
   };
 
   const handleRemoveMovie = async () => {
+    if (!hasRated) return;
+
     Alert.alert(
       'Remove Movie',
       'Are you sure you want to remove this movie from your rated list?',
@@ -108,7 +128,6 @@ export default function MovieDetailsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Backdrop Image */}
         {movieDetails.backdropPath && (
           <Image
             source={{ uri: getImageUrl(movieDetails.backdropPath, 'backdrop') }}
@@ -117,7 +136,6 @@ export default function MovieDetailsScreen() {
           />
         )}
 
-        {/* Movie Info */}
         <View style={styles.content}>
           <View style={styles.posterRow}>
             <Image
@@ -162,7 +180,7 @@ export default function MovieDetailsScreen() {
                 TMDb ({movieDetails.voteCount.toLocaleString()} votes)
               </Text>
             </View>
-            {isMovieRated(movieId) && (
+            {hasRated && (
               <View style={styles.ratingItem}>
                 <Ionicons name="heart" size={32} color={theme.colors.secondary} />
                 <Text style={[styles.ratingValue, { color: theme.colors.text }]}>
@@ -175,7 +193,6 @@ export default function MovieDetailsScreen() {
             )}
           </View>
 
-          {/* Action Buttons */}
           <View style={styles.actionButtons}>
             <TouchableOpacity
               style={[styles.actionButton, { backgroundColor: theme.colors.primary }]}
@@ -184,12 +201,12 @@ export default function MovieDetailsScreen() {
                 setShowRatingModal(true);
               }}
             >
-              <Ionicons name={isMovieRated(movieId) ? 'create' : 'star'} size={20} color="#fff" />
+              <Ionicons name={hasRated ? 'create' : 'star'} size={20} color="#fff" />
               <Text style={styles.actionButtonText}>
-                {isMovieRated(movieId) ? 'Update Rating' : 'Rate Movie'}
+                {hasRated ? 'Update Rating' : 'Rate Movie'}
               </Text>
             </TouchableOpacity>
-            {isMovieRated(movieId) && (
+            {hasRated && (
               <TouchableOpacity
                 style={[styles.actionButton, { backgroundColor: theme.colors.error }]}
                 onPress={handleRemoveMovie}
@@ -200,7 +217,6 @@ export default function MovieDetailsScreen() {
             )}
           </View>
 
-          {/* Genres */}
           {movieDetails.genres.length > 0 && (
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Genres</Text>
@@ -220,7 +236,6 @@ export default function MovieDetailsScreen() {
             </View>
           )}
 
-          {/* Overview */}
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Overview</Text>
             <Text style={[styles.overview, { color: theme.colors.text }]}>
@@ -230,7 +245,6 @@ export default function MovieDetailsScreen() {
         </View>
       </ScrollView>
 
-      {/* Rating Modal */}
       <Modal
         visible={showRatingModal}
         transparent

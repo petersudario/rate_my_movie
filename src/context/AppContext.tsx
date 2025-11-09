@@ -13,8 +13,8 @@ interface AppContextType {
   addRatedMovie: (movie: RatedMovie) => Promise<void>;
   updateRatedMovie: (movieId: number, userRating: number) => Promise<void>;
   removeRatedMovie: (movieId: number) => Promise<void>;
-  isMovieRated: (movieId: number) => boolean;
-  getRatedMovie: (movieId: number) => RatedMovie | undefined;
+  isMovieRated: (movieId: number, userEmail?: string) => boolean;
+  getRatedMovie: (movieId: number, userEmail?: string) => RatedMovie | undefined;
   refreshRatedMovies: () => Promise<void>;
 }
 
@@ -44,11 +44,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       if (userData) {
         setUserState(userData);
       } else {
-        // Create a default user if none exists
         const defaultUser: User = {
           id: '1',
           name: 'Movie Enthusiast',
           email: 'user@ratemymovie.com',
+          password: '123',
           profilePicture: null,
         };
         await UserRepository.saveUser(defaultUser);
@@ -129,12 +129,23 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
   };
 
-  const isMovieRated = (movieId: number): boolean => {
-    return ratedMovies.some(movie => movie.id === movieId);
+  const isMovieRated = (movieId: number, userEmail?: string): boolean => {
+    return ratedMovies.some((m: RatedMovie) =>
+      userEmail
+        ? m.id === movieId && m.userEmail === userEmail
+        : m.id === movieId
+    );
   };
 
-  const getRatedMovie = (movieId: number): RatedMovie | undefined => {
-    return ratedMovies.find(movie => movie.id === movieId);
+  const getRatedMovie = (
+    movieId: number,
+    userEmail?: string
+  ): RatedMovie | undefined => {
+    return ratedMovies.find((m: RatedMovie) =>
+      userEmail
+        ? m.id === movieId && m.userEmail === userEmail
+        : m.id === movieId
+    );
   };
 
   return (
