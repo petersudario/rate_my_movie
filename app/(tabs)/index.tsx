@@ -143,6 +143,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     marginLeft: 8,
+    borderRadius: 16
   },
   content: {
     flex: 1,

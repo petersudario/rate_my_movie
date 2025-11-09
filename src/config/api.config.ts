@@ -20,11 +20,13 @@
 const TMDB_API_KEY = process.env.TMDB_API_KEY
 
 if (!TMDB_API_KEY) {
+    // react native nao funciona mt bem com .env
     console.warn('Api key not set!!');
 }
 
 export const API_CONFIG = {
-    TMDB_API_KEY,
+    // tacar em um dotenv dps
+    TMDB_API_KEY: "c8d9d1813890b0618ea22a961269ed0f",
     TMDB_BASE_URL: 'https://api.themoviedb.org/3',
     TMDB_IMAGE_BASE_URL: 'https://image.tmdb.org/t/p',
     TMDB_POSTER_SIZE: 'w500',
