@@ -5,26 +5,78 @@ export default function Index() {
   const { user, signOut } = useAuth();
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.card}>
+    <SafeAreaView 
+      style={styles.safeArea}
+      accessible={false}
+    >
+      <View 
+        style={styles.container}
+        accessible={false}
+      >
+        <View 
+          style={styles.card}
+          accessible
+          accessibilityRole="summary"
+          accessibilityLabel={`User profile for ${user?.name}. Email: ${user?.email}.`}
+        >
+
           {user?.profilePictureUri && (
-            <Image source={{ uri: user.profilePictureUri }} style={styles.avatar} />
+            <Image 
+              source={{ uri: user.profilePictureUri }} 
+              style={styles.avatar}
+              accessible
+              accessibilityRole="image"
+              accessibilityLabel={`Profile picture of ${user?.name}`}
+            />
           )}
 
-          <Text style={styles.welcome}>Bem-vindo</Text>
-          <Text style={styles.name}>{user?.name}</Text>
-          <Text style={styles.email}>{user?.email}</Text>
-
-          <View style={styles.divider} />
-
-          <Text style={styles.helperText}>
-            Você está logado em sua conta. Em breve, esta tela mostrará seus filmes favoritos. 🎬
+          <Text 
+            style={styles.welcome}
+            accessibilityLabel="Welcome"
+          >
+            Welcome
           </Text>
 
-          <TouchableOpacity style={styles.logoutButton} onPress={signOut}>
-            <Text style={styles.logoutText}>Sair</Text>
+          <Text 
+            style={styles.name}
+            accessibilityLabel={`Name: ${user?.name}`}
+          >
+            {user?.name}
+          </Text>
+
+          <Text 
+            style={styles.email}
+            accessibilityLabel={`Email: ${user?.email}`}
+          >
+            {user?.email}
+          </Text>
+
+          <View 
+            style={styles.divider}
+            accessibilityElementsHidden
+            importantForAccessibility="no"
+          />
+
+          <Text 
+            style={styles.helperText}
+            accessibilityLabel="You are logged in. Soon this screen will show your favorite movies."
+          >
+            You are logged into your account. Soon, this screen will show your favorite movies. 🎬
+          </Text>
+
+          <TouchableOpacity 
+            style={styles.logoutButton} 
+            onPress={signOut}
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel="Sign out"
+            accessibilityHint="Logs you out and returns to the login screen"
+          >
+            <Text style={styles.logoutText}>
+              Sign Out
+            </Text>
           </TouchableOpacity>
+
         </View>
       </View>
     </SafeAreaView>

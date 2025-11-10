@@ -115,10 +115,20 @@ export default function RegisterScreen() {
             )}
 
             <View style={styles.avatarButtonsRow}>
-              <TouchableOpacity style={styles.secondaryButton} onPress={pickImage}>
+              <TouchableOpacity style={styles.secondaryButton} onPress={pickImage}
+                accessible
+                accessibilityLabel="Botão de escolher foto da galeria"
+                accessibilityRole="button"
+                accessibilityHint="Abre a galeria para escolher uma foto"
+              >
                 <Text style={styles.secondaryButtonText}>Galeria</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.secondaryButton} onPress={takePhoto}>
+              <TouchableOpacity style={styles.secondaryButton} onPress={takePhoto}
+                accessible
+                accessibilityLabel="Botão de tirar foto com a câmera"
+                accessibilityRole="button"
+                accessibilityHint="Abre a câmera para tirar uma foto"
+              >
                 <Text style={styles.secondaryButtonText}>Câmera</Text>
               </TouchableOpacity>
             </View>
@@ -131,6 +141,9 @@ export default function RegisterScreen() {
             placeholderTextColor="#6B7280"
             value={name}
             onChangeText={setName}
+            accessible
+            accessibilityLabel="Campo de nome"
+            accessibilityHint="Insira seu nome aqui"
           />
 
           <Text style={styles.label}>E-mail</Text>
@@ -142,6 +155,9 @@ export default function RegisterScreen() {
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
+            accessible
+            accessibilityLabel="Campo de e-mail"
+            accessibilityHint="Insira seu endereço de e-mail aqui"
           />
 
           <Text style={styles.label}>Senha</Text>
@@ -152,10 +168,18 @@ export default function RegisterScreen() {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            accessible
+            accessibilityLabel="Campo de senha"
+            accessibilityHint="Insira sua senha aqui"
           />
 
-          <TouchableOpacity style={styles.primaryButton} onPress={handleRegister}>
-            <Text style={styles.primaryButtonText}>Cadastrar</Text>
+          <TouchableOpacity style={styles.primaryButton} onPress={handleRegister}
+            accessible
+            accessibilityLabel="Botão de cadastrar"
+            accessibilityRole="button"
+            accessibilityHint="Cadastra uma nova conta"
+          >
+            <Text style={styles.primaryButtonText} accessible accessibilityLabel="Texto do botão cadastrar">Cadastrar</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

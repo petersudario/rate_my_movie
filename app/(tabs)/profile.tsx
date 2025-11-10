@@ -16,18 +16,13 @@ import { useTheme } from '../../src/theme/ThemeContext';
 
 export default function ProfileScreen() {
   const { theme, isDark, toggleTheme } = useTheme();
-
-  // 👇 usuário logado, vindo do AuthContext (UserRepository)
   const { user: authUser, signOut, updateProfile } = useAuth();
-
-  // 👇 só usamos o AppContext pra pegar os filmes avaliados
   const { ratedMovies } = useApp();
 
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
 
-  // sempre que trocar de conta, atualiza os campos
   useEffect(() => {
     if (authUser) {
       setName(authUser.name);
@@ -47,7 +42,6 @@ export default function ProfileScreen() {
 
   const handleSave = async () => {
     if (!authUser) return;
-
     try {
       await updateProfile({ name, email });
       setIsEditing(false);
@@ -56,6 +50,13 @@ export default function ProfileScreen() {
       console.error(e);
       Alert.alert('Error', 'Failed to update profile');
     }
+  };
+
+  // Prevent image flash on logout
+  const handleSignOut = () => {
+    setName('');
+    setEmail('');
+    signOut();
   };
 
   const stats = [
@@ -70,10 +71,8 @@ export default function ProfileScreen() {
       value:
         myRatedMovies.length > 0
           ? (
-              myRatedMovies.reduce(
-                (sum: number, m: any) => sum + m.userRating,
-                0
-              ) / myRatedMovies.length
+              myRatedMovies.reduce((sum: number, m: any) => sum + m.userRating, 0) /
+              myRatedMovies.length
             ).toFixed(1)
           : '0.0',
       icon: 'trophy' as const,
@@ -98,14 +97,24 @@ export default function ProfileScreen() {
     >
       <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
         <View style={styles.profileImageContainer}>
-          {avatarUri ? (
-            <Image source={{ uri: avatarUri }} style={styles.profileImage} />
+          {authUser && avatarUri ? (
+            <Image
+              source={{ uri: avatarUri }}
+              style={styles.profileImage}
+              resizeMode="cover"
+              accessible
+              accessibilityRole="image"
+              accessibilityLabel="User profile picture"
+            />
           ) : (
             <View
               style={[
                 styles.profileImagePlaceholder,
                 { backgroundColor: theme.colors.primary },
               ]}
+              accessible
+              accessibilityRole="image"
+              accessibilityLabel="Default profile icon"
             >
               <Ionicons name="person" size={48} color="#fff" />
             </View>
@@ -127,6 +136,9 @@ export default function ProfileScreen() {
               onChangeText={setName}
               placeholder="Name"
               placeholderTextColor={theme.colors.textSecondary}
+              accessible
+              accessibilityLabel="Name input field"
+              accessibilityHint="Enter your new name"
             />
             <TextInput
               style={[
@@ -143,8 +155,11 @@ export default function ProfileScreen() {
               placeholderTextColor={theme.colors.textSecondary}
               keyboardType="email-address"
               autoCapitalize="none"
+              accessible
+              accessibilityLabel="Email input field"
+              accessibilityHint="Enter your new email"
             />
-            <View className="editButtons" style={styles.editButtons}>
+            <View style={styles.editButtons}>
               <TouchableOpacity
                 style={[styles.button, { backgroundColor: theme.colors.border }]}
                 onPress={() => {
@@ -152,14 +167,23 @@ export default function ProfileScreen() {
                   setName(authUser?.name || '');
                   setEmail(authUser?.email || '');
                 }}
+                accessible
+                accessibilityRole="button"
+                accessibilityLabel="Cancel editing"
+                accessibilityHint="Discard changes"
               >
                 <Text style={[styles.buttonText, { color: theme.colors.text }]}>
                   Cancel
                 </Text>
               </TouchableOpacity>
+
               <TouchableOpacity
                 style={[styles.button, { backgroundColor: theme.colors.primary }]}
                 onPress={handleSave}
+                accessible
+                accessibilityRole="button"
+                accessibilityLabel="Save profile changes"
+                accessibilityHint="Save your new name and email"
               >
                 <Text style={styles.buttonText}>Save</Text>
               </TouchableOpacity>
@@ -167,21 +191,30 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <View style={styles.profileInfo}>
-            <Text style={[styles.name, { color: theme.colors.text }]}>
+            <Text
+              style={[styles.name, { color: theme.colors.text }]}
+              accessible
+              accessibilityLabel={`Name: ${authUser?.name}`}
+            >
               {authUser?.name}
             </Text>
-            <Text style={[styles.email, { color: theme.colors.textSecondary }]}>
+            <Text
+              style={[styles.email, { color: theme.colors.textSecondary }]}
+              accessible
+              accessibilityLabel={`Email: ${authUser?.email}`}
+            >
               {authUser?.email}
             </Text>
+
             <TouchableOpacity
               style={[styles.editButton, { borderColor: theme.colors.primary }]}
               onPress={() => setIsEditing(true)}
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel="Edit profile"
+              accessibilityHint="Open fields to edit name and email"
             >
-              <Ionicons
-                name="create-outline"
-                size={20}
-                color={theme.colors.primary}
-              />
+              <Ionicons name="create-outline" size={20} color={theme.colors.primary} />
               <Text
                 style={[styles.editButtonText, { color: theme.colors.primary }]}
               >
@@ -192,7 +225,7 @@ export default function ProfileScreen() {
         )}
       </View>
 
-      <View className="statsContainer" style={styles.statsContainer}>
+      <View style={styles.statsContainer}>
         {stats.map((stat, index) => (
           <View
             key={index}
@@ -203,14 +236,12 @@ export default function ProfileScreen() {
                 borderColor: theme.colors.border,
               },
             ]}
+            accessible
+            accessibilityLabel={`${stat.label}: ${stat.value}`}
           >
             <Ionicons name={stat.icon} size={32} color={stat.color} />
-            <Text style={[styles.statValue, { color: theme.colors.text }]}>
-              {stat.value}
-            </Text>
-            <Text
-              style={[styles.statLabel, { color: theme.colors.textSecondary }]}
-            >
+            <Text style={[styles.statValue, { color: theme.colors.text }]}>{stat.value}</Text>
+            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
               {stat.label}
             </Text>
           </View>
@@ -228,27 +259,20 @@ export default function ProfileScreen() {
         </Text>
 
         <TouchableOpacity
-          style={[
-            styles.settingItem,
-            { borderBottomColor: theme.colors.border },
-          ]}
+          style={[styles.settingItem, { borderBottomColor: theme.colors.border }]}
           onPress={toggleTheme}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel="Toggle theme"
+          accessibilityHint="Switch between light and dark mode"
         >
           <View style={styles.settingLeft}>
-            <Ionicons
-              name={isDark ? 'moon' : 'sunny'}
-              size={24}
-              color={theme.colors.text}
-            />
+            <Ionicons name={isDark ? 'moon' : 'sunny'} size={24} color={theme.colors.text} />
             <Text style={[styles.settingText, { color: theme.colors.text }]}>
               {isDark ? 'Dark Mode' : 'Light Mode'}
             </Text>
           </View>
-          <Ionicons
-            name="chevron-forward"
-            size={24}
-            color={theme.colors.textSecondary}
-          />
+          <Ionicons name="chevron-forward" size={24} color={theme.colors.textSecondary} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -256,7 +280,11 @@ export default function ProfileScreen() {
             styles.settingItem,
             { borderBottomColor: theme.colors.border, marginTop: 8 },
           ]}
-          onPress={signOut}
+          onPress={handleSignOut}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel="Sign out"
+          accessibilityHint="Log out of your account"
         >
           <View style={styles.settingLeft}>
             <Ionicons
@@ -268,11 +296,7 @@ export default function ProfileScreen() {
               Sair da conta
             </Text>
           </View>
-          <Ionicons
-            name="chevron-forward"
-            size={24}
-            color={theme.colors.textSecondary}
-          />
+          <Ionicons name="chevron-forward" size={24} color={theme.colors.textSecondary} />
         </TouchableOpacity>
       </View>
     </ScrollView>

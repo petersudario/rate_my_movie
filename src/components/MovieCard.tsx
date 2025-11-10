@@ -20,19 +20,41 @@ export const MovieCard: React.FC<MovieCardProps> = ({
 }) => {
   const { theme } = useTheme();
 
+  const accessibleLabel = [
+    `${movie.title}.`,
+    movie.releaseDate ? `Release year: ${new Date(movie.releaseDate).getFullYear()}.` : null,
+    `Average rating: ${movie.voteAverage.toFixed(1)}.`,
+    isRated && userRating ? `Your rating: ${userRating.toFixed(1)}.` : null,
+    `Tap to open movie details.`
+  ]
+  .filter(Boolean)
+  .join(' ');
+
   return (
     <TouchableOpacity 
-      style={[styles.container, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
+      style={[
+        styles.container, 
+        { backgroundColor: theme.colors.card, borderColor: theme.colors.border }
+      ]}
       onPress={onPress}
       activeOpacity={0.7}
+      accessible
+      accessibilityRole="button"
+      accessibilityLabel={accessibleLabel}
+      accessibilityHint="Opens the selected movie's detail page"
     >
       <Image
-        source={{ 
-          uri: getImageUrl(movie.posterPath, 'poster') || 'https://via.placeholder.com/500x750?text=No+Image'
+        source={{
+          uri: getImageUrl(movie.posterPath, 'poster') 
+            || 'https://via.placeholder.com/500x750?text=No+Image'
         }}
         style={styles.poster}
         resizeMode="cover"
+        accessible
+        accessibilityRole="image"
+        accessibilityLabel={`${movie.title} poster`}
       />
+
       <View style={styles.content}>
         <Text 
           style={[styles.title, { color: theme.colors.text }]}
@@ -40,6 +62,7 @@ export const MovieCard: React.FC<MovieCardProps> = ({
         >
           {movie.title}
         </Text>
+
         <Text style={[styles.year, { color: theme.colors.textSecondary }]}>
           {movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : 'N/A'}
         </Text>
@@ -49,6 +72,7 @@ export const MovieCard: React.FC<MovieCardProps> = ({
           <Text style={[styles.rating, { color: theme.colors.text }]}>
             {movie.voteAverage.toFixed(1)}
           </Text>
+
           {isRated && userRating && (
             <>
               <View style={[styles.dot, { backgroundColor: theme.colors.textSecondary }]} />

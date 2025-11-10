@@ -1,7 +1,7 @@
 import { useAuth } from '@/src/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   FlatList,
   Modal,
@@ -9,6 +9,8 @@ import {
   Text,
   TouchableOpacity,
   View,
+  AccessibilityInfo,
+  findNodeHandle,
 } from 'react-native';
 import { MovieCard } from '../../src/components/MovieCard';
 import { useApp } from '../../src/context/AppContext';
@@ -20,6 +22,9 @@ export default function RatedMoviesScreen() {
   const router = useRouter();
   const { ratedMovies } = useApp();
   const { user } = useAuth();
+
+  const sortMenuRef = useRef<View>(null);
+  const filterMenuRef = useRef<View>(null);
 
   const myRatedMovies = ratedMovies.filter(
     (m) => m.userEmail === user?.email
@@ -38,8 +43,21 @@ export default function RatedMoviesScreen() {
 
   useEffect(() => {
     updateSort('dateAdded');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ratedMovies]);
+
+  useEffect(() => {
+    if (showSortMenu && sortMenuRef.current) {
+      const node = findNodeHandle(sortMenuRef.current);
+      node && AccessibilityInfo.setAccessibilityFocus(node);
+    }
+  }, [showSortMenu]);
+
+  useEffect(() => {
+    if (showFilterMenu && filterMenuRef.current) {
+      const node = findNodeHandle(filterMenuRef.current);
+      node && AccessibilityInfo.setAccessibilityFocus(node);
+    }
+  }, [showFilterMenu]);
 
   const handleMoviePress = (movieId: number) => {
     router.push(`/movie/${movieId}` as any);
@@ -66,12 +84,18 @@ export default function RatedMoviesScreen() {
           <TouchableOpacity
             style={[styles.headerButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
             onPress={() => setShowFilterMenu(true)}
+            accessibilityLabel="Filter movies"
+            accessibilityRole="button"
+            accessibilityHint="Opens the filter menu"
           >
             <Ionicons name="filter" size={20} color={theme.colors.primary} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.headerButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
             onPress={() => setShowSortMenu(true)}
+            accessibilityLabel="Sort movies"
+            accessibilityRole="button"
+            accessibilityHint="Opens the sorting menu"
           >
             <Ionicons name="swap-vertical" size={20} color={theme.colors.primary} />
           </TouchableOpacity>
@@ -80,7 +104,13 @@ export default function RatedMoviesScreen() {
 
       {filteredMovies.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="star-outline" size={64} color={theme.colors.textSecondary} />
+          <Ionicons
+            name="star-outline"
+            size={64}
+            color={theme.colors.textSecondary}
+            accessibilityElementsHidden
+            importantForAccessibility="no"
+          />
           <Text style={[styles.emptyText, { color: theme.colors.text }]}>
             No rated movies yet
           </Text>
@@ -105,19 +135,15 @@ export default function RatedMoviesScreen() {
         />
       )}
 
-      {/* Sort Menu Modal */}
-      <Modal
-        visible={showSortMenu}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowSortMenu(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowSortMenu(false)}
-        >
-          <View style={[styles.menuContainer, { backgroundColor: theme.colors.card }]}>
+      {/* SORT MENU */}
+      <Modal visible={showSortMenu} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View
+            ref={sortMenuRef}
+            accessible
+            accessibilityLabel="Sorting menu"
+            style={[styles.menuContainer, { backgroundColor: theme.colors.card }]}
+          >
             <Text style={[styles.menuTitle, { color: theme.colors.text }]}>Sort By</Text>
             {sortOptions.map((option) => (
               <TouchableOpacity
@@ -131,42 +157,33 @@ export default function RatedMoviesScreen() {
                   updateSort(option.value);
                   setShowSortMenu(false);
                 }}
+                accessibilityLabel={`Sort by ${option.label}`}
+                accessibilityRole="button"
               >
                 <Ionicons
                   name={option.icon}
                   size={20}
                   color={sortBy === option.value ? theme.colors.primary : theme.colors.text}
                 />
-                <Text
-                  style={[
-                    styles.menuItemText,
-                    { color: sortBy === option.value ? theme.colors.primary : theme.colors.text },
-                  ]}
-                >
+                <Text style={[styles.menuItemText, { color: sortBy === option.value ? theme.colors.primary : theme.colors.text }]}>
                   {option.label}
                 </Text>
-                {sortBy === option.value && (
-                  <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
-                )}
+                {sortBy === option.value && <Ionicons name="checkmark" size={20} color={theme.colors.primary} />}
               </TouchableOpacity>
             ))}
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
 
-      {/* Filter Menu Modal */}
-      <Modal
-        visible={showFilterMenu}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowFilterMenu(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowFilterMenu(false)}
-        >
-          <View style={[styles.menuContainer, { backgroundColor: theme.colors.card }]}>
+      {/* FILTER MENU */}
+      <Modal visible={showFilterMenu} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View
+            ref={filterMenuRef}
+            accessible
+            accessibilityLabel="Filter menu"
+            style={[styles.menuContainer, { backgroundColor: theme.colors.card }]}
+          >
             <Text style={[styles.menuTitle, { color: theme.colors.text }]}>Filter By</Text>
             {filterOptions.map((option) => (
               <TouchableOpacity
@@ -180,31 +197,27 @@ export default function RatedMoviesScreen() {
                   updateFilter(option.value);
                   setShowFilterMenu(false);
                 }}
+                accessibilityLabel={`Filter by ${option.label}`}
+                accessibilityRole="button"
               >
                 <Ionicons
                   name={option.icon}
                   size={20}
                   color={filterBy === option.value ? theme.colors.primary : theme.colors.text}
                 />
-                <Text
-                  style={[
-                    styles.menuItemText,
-                    { color: filterBy === option.value ? theme.colors.primary : theme.colors.text },
-                  ]}
-                >
+                <Text style={[styles.menuItemText, { color: filterBy === option.value ? theme.colors.primary : theme.colors.text }]}>
                   {option.label}
                 </Text>
-                {filterBy === option.value && (
-                  <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
-                )}
+                {filterBy === option.value && <Ionicons name="checkmark" size={20} color={theme.colors.primary} />}
               </TouchableOpacity>
             ))}
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
