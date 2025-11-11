@@ -52,7 +52,6 @@ export default function ProfileScreen() {
     }
   };
 
-  // Prevent image flash on logout
   const handleSignOut = () => {
     setName('');
     setEmail('');
